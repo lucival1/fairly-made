@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+npm-debug.log*
+
+# Build output
+dist/
+build/
+*.tsbuildinfo
+
+# IDE
+.vscode/
+*~
+.DS_Store
+
+# Testing
+coverage/
+.nyc_output/
+*.lcov
+
+# Logs
+logs/
+*.log
+
+# OS
+Thumbs.db
+
+# Misc
+cheatsheet/
