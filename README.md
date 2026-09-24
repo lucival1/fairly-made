@@ -52,16 +52,46 @@ classes (deliberately light for the timebox):
 - **provenance** is `DECLARED | CORRECTED`, computed per field by the merge, never persisted.
   A corrected field also carries the current declared value, so the screen can show both.
 
-**Backend** — three NestJS modules, wired through dependency injection:
+**Backend** — NestJS modules, wired through dependency injection:
 
-- `reference` — the supplier registry and the process / raw-material vocabularies, exported to
-  the other modules.
-- `traceability` — declared trees, corrections, refresh. Its `domain/` folder holds the types,
-  the pure merge (declared ⊕ corrections → working tree) and the diff: no framework imports,
-  unit-tested in isolation. The repository is an interface injected by token, backed by an
-  in-memory implementation — swapping in a database is one provider change.
+- `reference` — the supplier registry and the process / raw-material vocabularies. A read-only
+  lookup with no rules of its own, so it stays flat (service + controller).
+- `traceability` — declared trees, corrections, refresh. Hexagonal, kept light:
+
+  ```
+  traceability/
+  ├── domain/          pure types + rules: merge, diff, validation. No framework imports.
+  ├── application/
+  │   ├── ports/       interfaces the use cases need: ProductRepository, ReferenceCatalog
+  │   ├── use-cases/   one class per user action (CorrectStepField, ApplyRefresh, …)
+  │   └── shared/      the load → change → save cycle and helpers every use case reuses
+  └── infrastructure/  adapters: HTTP controller + request parsing, in-memory repository,
+                       seeding and the demo refresh fixtures
+  ```
+
+  Dependencies only point inwards: infrastructure → application → domain. Ports are bound to
+  adapters in `traceability.module.ts`; swapping the in-memory store for a database is one
+  provider line.
+
 - `versions` — publishes and reads versions. It asks `traceability` for the working tree and
   never needs to know how that tree is built.
+- `seed-data` — the one place that knows where `data/` lives.
+
+Domain errors are mapped to HTTP by a single filter (`NotFoundError` → 404, any other broken rule
+→ 400 with its message), so the domain never imports Nest.
+
+**Tests** — where they earn their place:
+
+- `domain/*.spec.ts` — the merge, diff and validation rules against the real seed data, including
+  every refresh scenario from the brief. This is where the design is proven.
+- `application/use-cases/*.spec.ts` — one spec next to each use case, run through the real module
+  graph (in-memory adapter), which also checks the DI wiring.
+- `infrastructure/http/*.spec.ts` — the HTTP adapter on a real port: routes, request parsing,
+  error-to-status mapping, the fixture replay.
+- No dedicated tests for `reference` and `seed-data`: they only read JSON files and hold no
+  rules, and both are exercised by the specs above (supplier/process checks, `GET /reference`,
+  seeding). They would earn tests once they gain behaviour — e.g. a supplier registry fed by an
+  external system.
 
 **Front**: Nuxt (Vue 3, Composition API, client-side only), talking REST to the API through a
 dev proxy.
@@ -115,6 +145,14 @@ view and the "working tree has unpublished changes" flag on the product list.
 ## What I cut, and why
 
 `TODO` — filled in at the end against the actual 4h clock.
+
+Running list, kept as we go:
+
+- **Typed vocabularies.** `process`, `rawMaterial` and `usageCategory` stay plain strings.
+  `processes.json` calls itself a controlled vocabulary, "not a hard constraint to enforce", and a
+  refresh must not be rejected because the collection system emits a new code. What the user
+  submits is checked against the vocabulary instead. If those lists become a hard contract with
+  the collection system, they can become union types.
 
 ## Where I used AI
 

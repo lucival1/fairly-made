@@ -1,10 +1,12 @@
 import { Module } from '@nestjs/common';
-import { AppController } from './app.controller.js';
-import { AppService } from './app.service.js';
+import { APP_FILTER } from '@nestjs/core';
+import { DomainErrorFilter } from './common/domain-error.filter.js';
+import { ReferenceModule } from './reference/reference.module.js';
+import { SeedDataModule } from './seed-data/seed-data.module.js';
+import { TraceabilityModule } from './traceability/traceability.module.js';
 
 @Module({
-  imports: [],
-  controllers: [AppController],
-  providers: [AppService],
+  imports: [SeedDataModule, ReferenceModule, TraceabilityModule],
+  providers: [{ provide: APP_FILTER, useClass: DomainErrorFilter }],
 })
 export class AppModule {}
