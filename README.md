@@ -93,8 +93,27 @@ Domain errors are mapped to HTTP by a single filter (`NotFoundError` → 404, an
   seeding). They would earn tests once they gain behaviour — e.g. a supplier registry fed by an
   external system.
 
-**Front**: Nuxt (Vue 3, Composition API, client-side only), talking REST to the API through a
-dev proxy.
+**Front** — Nuxt (Vue 3, Composition API, client-side only), talking REST to the API through a
+dev proxy (`/api/**` → port 3001):
+
+- `pages/` — the product list (Browse) and one product's working tree.
+- `services/traceability-api.ts` — the only place that knows the API's URLs and methods.
+- `composables/useProductTree` — the tree as screen state (tree, busy, error, notice) and the
+  actions on it, calling the service. Each action answers with the new tree, so the page simply
+  re-renders. The page shares it with the recursive tree components through `provide` /
+  `inject` (`provideProductTree` / `injectProductTree`) instead of passing it down every level.
+- `components/` — atomic design, flat names (`pathPrefix: false`):
+  - `atoms/` — `ProvenanceBadge` (Declared / Corrected), `UnknownValue`, `SupplierSelect`,
+    `ProcessSelect` (only the processes `processes.json` lists for that kind of item),
+    `CountryInput`
+  - `molecules/` — `StepValue` (one value with its badge, the declared value when corrected,
+    edit and "use declared"), `CompositionValue` (live total while editing), `AddStepForm`
+  - `organisms/` — `TreeItem` (recursive; product, component and material cards collapse to a
+    one-line summary, open by default), `StepCard`, `DormantCorrections`
+- The screen leads with what is still unknown (✖, a pastel red row and a count at the top) — the
+  brand's to-do list. Steps the user added are pastel yellow.
+- Response types are copied by hand in `types/api.ts` for now (a shared package is on the next
+  list).
 
 ## How a correction survives a refresh
 
