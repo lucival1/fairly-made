@@ -4,6 +4,9 @@ export default defineNuxtConfig({
   devtools: { enabled: true },
   ssr: false,
   typescript: { strict: true },
+  // Atomic design folders (atoms / molecules / organisms) without prefixing
+  // component names with the folder: <StepValue>, not <MoleculesStepValue>.
+  components: [{ path: '~/components', pathPrefix: false }],
   routeRules: {
     '/api/**': { proxy: 'http://localhost:3001/api/**' },
   },
